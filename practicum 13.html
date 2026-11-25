@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Meridian Transit – Intelligent Traffic Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="style_1.css">
+<script>document.documentElement.classList.add("js")</script>
+<script src="script.js" defer></script>
+</head>
+<body>
+<header class="site-header"><div class="bar">
+<a class="logo" href="#top">Meridian Transit</a>
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menu"><span class="burger"></span></button>
+<nav id="menu" aria-label="Sections">
+<ul class="menu">
+<li><a href="#map">Live map</a></li>
+<li><a href="#alerts">Alerts</a></li>
+<li><a href="#board">Incident board</a></li>
+<li><a href="#tasks">Tasks</a></li>
+<li><a href="#conditions">Road conditions</a></li>
+<li><a href="#feed">Live data</a></li>
+<li><a href="#signals">Smart signals</a></li>
+<li><a href="#monitoring">Monitoring</a></li>
+<li><a href="#media">Media centre</a></li>
+<li><a href="#routes">Navigation</a></li>
+<li><a href="#positioning">Positioning</a></li>
+<li><a href="#report" class="cta">Report</a></li>
+</ul>
+</nav>
+</div></header>
+<main id="top">
+<section class="hero" id="map">
+<h1>See the whole network move, then keep it moving.</h1>
+<p>Meridian Transit connects road sensors, cameras and signals into one live picture of the city. Select any road to see how it is flowing right now.</p>
+<div class="grid">
+<div class="card mapwrap">
+<span class="badge-live">&#9679; Live</span>
+<svg id="svg" viewBox="0 0 600 400" role="img" aria-label="Map of the city road network coloured by congestion" width="100%">
+<rect width="600" height="400" rx="8" fill="var(--bg)"/>
+<path d="M0,350 C120,330 180,380 300,365 S520,340 600,370 V400 H0Z" fill="var(--line)" opacity=".6"/>
+<text x="470" y="392" font-size="12" fill="var(--mute)">Harbour</text>
+<rect x="320" y="110" width="110" height="70" rx="6" fill="var(--line)" opacity=".45"/><text x="340" y="150" font-size="12" fill="var(--mute)">Old Town</text>
+<g id="hl"></g>
+<g id="roads"></g>
+<g id="nodes"></g>
+<g font-size="12" fill="var(--ink)">
+<text x="150" y="76" text-anchor="middle">University</text>
+<text x="450" y="76" text-anchor="middle">Airport</text>
+<text x="300" y="296" text-anchor="middle">Harbour</text>
+<text x="312" y="188">Central Station</text>
+</g>
+</svg>
+<div class="legend"><span><i class="dot free"></i>Free flow</span><span><i class="dot mod"></i>Moderate</span><span><i class="dot heavy"></i>Heavy</span><span>Updated <b id="clock">just now</b></span></div>
+</div>
+<aside class="card" id="detail" aria-live="polite"></aside>
+</div>
+</section>
+
+<section id="alerts" class="reveal">
+<h2>Traffic alerts</h2>
+<p class="lede">Incidents, closures and planned works reported by sensors, patrols and drivers.</p>
+<div class="filters" role="group" aria-label="Filter alerts">
+<button class="chip" data-f="all" aria-pressed="true">All</button>
+<button class="chip" data-f="high" aria-pressed="false">Severe</button>
+<button class="chip" data-f="med" aria-pressed="false">Moderate</button>
+<button class="chip" data-f="low" aria-pressed="false">Advisory</button>
+</div>
+<ul class="alerts" id="alertList"></ul>
+</section>
+
+<section id="board" class="reveal">
+<h2>Incident board</h2>
+<p class="lede">Operators log, update and clear incidents here. Every change appears instantly on the page, with no reload.</p>
+<div class="board">
+<form class="card board-form" id="incForm" novalidate>
+<h3 id="formTitle">Log an incident</h3>
+<div class="presets" id="presets" role="group" aria-label="Quick templates">
+<button type="button" class="preset" data-title="Two-vehicle crash" data-sev="high" data-adj="Urgent, Blocking" data-note="Emergency services requested.">Crash</button>
+<button type="button" class="preset" data-title="Signal fault at junction" data-sev="med" data-adj="Faulty, Flashing" data-note="Junction running on backup timing.">Signal fault</button>
+<button type="button" class="preset" data-title="Flooding on carriageway" data-sev="high" data-adj="Hazardous, Flooded" data-note="Standing water across both lanes.">Flooding</button>
+<button type="button" class="preset" data-title="Pothole in left lane" data-sev="low" data-adj="Minor, Repairable" data-note="Crew to inspect today.">Pothole</button>
+</div>
+<div class="f"><label class="req" for="incTitle">Incident</label><input type="text" id="incTitle" maxlength="60" autocomplete="off" placeholder="e.g. Stalled bus on Harbour Road"><small><span id="titleCount">0</span>/60 characters</small><small class="err" id="errTitle" role="alert"></small></div>
+<div class="f"><label for="incRoad">Road</label><select id="incRoad"></select></div>
+<div class="f"><label for="incSev">Severity</label><select id="incSev"><option value="high">Severe</option><option value="med" selected>Moderate</option><option value="low">Advisory</option></select></div>
+<div class="f"><label for="incAdj">Describing words</label><input type="text" id="incAdj" maxlength="80" autocomplete="off" placeholder="Blocking, Urgent, Active"><small>Up to four, separated by commas. Leave empty for suggestions.</small></div>
+<div class="f"><label for="incNote">Note (optional)</label><input type="text" id="incNote" maxlength="120" autocomplete="off" placeholder="What can operators see?"></div>
+<div class="btns"><button type="submit" id="incSave">Add incident</button><button type="button" id="incCancel" hidden>Cancel edit</button></div>
+</form>
+<div class="board-main">
+<div class="board-bar">
+<p id="boardSummary" aria-live="polite"></p>
+<input type="text" id="incSearch" placeholder="Search incidents" aria-label="Search incidents" autocomplete="off">
+<button type="button" class="preset" id="clearDone">Remove cleared</button>
+</div>
+<ul class="incidents" id="incList"></ul>
+</div>
+</div>
+</section>
+
+<section id="tasks" class="reveal">
+<h2>Operations task manager</h2>
+<p class="lede">Plan, assign and track the work that keeps roads moving: patrols, signal repairs, road works and emergency response. Tasks are saved in your browser, so they are still here after a refresh.</p>
+<div class="tm">
+<form class="card tm-form" id="taskForm" novalidate>
+<h3 id="taskFormTitle">Create a task</h3>
+<div class="f"><label class="req" for="taskTitle">Task</label><input type="text" id="taskTitle" maxlength="80" autocomplete="off" placeholder="e.g. Replace signal controller on Main Street"><small class="err" id="errTaskTitle" role="alert"></small></div>
+<div class="f"><label for="taskTeam">Team</label><select id="taskTeam"><option value="Control room">Control room</option><option value="Field patrol">Field patrol</option><option value="Signal maintenance">Signal maintenance</option><option value="Road works">Road works</option><option value="Emergency response">Emergency response</option></select></div>
+<div class="f"><label for="taskRoad">Road</label><select id="taskRoad"></select></div>
+<div class="tm-pair">
+<div class="f"><label for="taskPriority">Priority</label><select id="taskPriority"><option value="high">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select></div>
+<div class="f"><label for="taskDue">Due date</label><input type="date" id="taskDue"></div>
+</div>
+<div class="f"><label for="taskStatus">Status</label><select id="taskStatus"><option value="todo" selected>To do</option><option value="progress">In progress</option><option value="done">Done</option></select></div>
+<div class="f"><label for="taskDesc">Details (optional)</label><textarea id="taskDesc" maxlength="300" placeholder="What needs to be done, and where?"></textarea></div>
+<div class="btns"><button type="submit" id="taskSave">Add task</button><button type="button" id="taskCancel" hidden>Cancel edit</button></div>
+</form>
+<div class="tm-main">
+<ul class="tm-stats" id="taskStats" aria-live="polite">
+<li><b id="stTotal">0</b><span>Total</span></li>
+<li><b id="stTodo">0</b><span>To do</span></li>
+<li><b id="stProgress">0</b><span>In progress</span></li>
+<li><b id="stDone">0</b><span>Done</span></li>
+</ul>
+<div class="tm-bar">
+<input type="text" id="taskSearch" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off">
+<select id="taskFilter" aria-label="Filter by status"><option value="all">All statuses</option><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select>
+<button type="button" class="preset" id="taskClearDone">Clear completed</button>
+</div>
+<div class="tablewrap tm-table"><table>
+<thead><tr><th>Task</th><th>Team</th><th>Road</th><th>Priority</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody id="taskBody"></tbody></table></div>
+</div>
+</div>
+</section>
+
+<section id="conditions" class="reveal">
+<h2>Road conditions</h2>
+<p class="lede">Speed, weather and surface status on each monitored corridor.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Road</th><th>Avg. speed</th><th>Status</th><th>Surface</th><th>Visibility</th></tr></thead>
+<tbody id="cond"></tbody></table></div>
+</section>
+
+<section id="feed" class="reveal" aria-busy="false">
+<h2>Live network data</h2>
+<p class="lede">Real-time road weather for major traffic hubs, fetched from the Open-Meteo API and shown as it arrives. Rain, wind and visibility change how fast traffic can safely move.</p>
+<ul class="adjectives" aria-label="Qualities"><li>Live</li><li>Remote</li><li>Dynamic</li><li>Self-updating</li></ul>
+
+<div class="feed-bar">
+<p id="feedStatus" aria-live="polite">Preparing to load&hellip;</p>
+<button type="button" class="preset" id="feedRefresh">Refresh data</button>
+</div>
+
+<!-- Loading indicator: spinner plus placeholder rows -->
+<div class="loader" id="feedLoader" role="status" aria-live="polite" hidden>
+<div class="loader-head">
+<div class="spinner" aria-hidden="true"></div>
+<p>Fetching live conditions&hellip;</p>
+<ul class="adjectives" aria-label="Qualities"><li>Fetching</li><li>Pending</li><li>Patient</li></ul>
+</div>
+<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+</div>
+
+<!-- Error message: shown when the request fails -->
+<div class="feed-error" id="feedError" role="alert" hidden>
+<div class="feed-error-body">
+<p id="feedErrorText"></p>
+<ul class="adjectives" aria-label="Qualities"><li>Unavailable</li><li>Temporary</li><li>Recoverable</li></ul>
+</div>
+<button type="button" class="preset" id="feedRetry">Try again</button>
+</div>
+
+<!-- Data: summary cards and table, filled by JavaScript -->
+<div class="stats feed-summary" id="feedSummary" hidden></div>
+<div class="tablewrap feed-table" id="feedTable" hidden>
+<table>
+<thead><tr><th>Hub</th><th>Temp.</th><th>Rain</th><th>Wind</th><th>Visibility</th><th>Road status</th><th>Conditions</th></tr></thead>
+<tbody id="feedBody"></tbody>
+</table>
+</div>
+<p class="feed-note">Source: Open-Meteo.com. Refreshes automatically every five minutes.</p>
+<noscript><p>Live data needs JavaScript to be turned on.</p></noscript>
+</section>
+
+<section id="signals" class="reveal">
+<h2>Smart signals</h2>
+<p class="lede">Adaptive signals lengthen green time where cars are queuing. Move the slider to change demand on Main Street and compare.</p>
+<div class="card sig">
+<svg viewBox="0 0 240 240" role="img" aria-label="Intersection with traffic lights" width="100%">
+<rect x="0" y="95" width="240" height="50" fill="var(--road)"/><rect x="95" y="0" width="50" height="240" fill="var(--road)"/>
+<path d="M0,120 H95 M145,120 H240 M120,0 V95 M120,145 V240" stroke="var(--surface)" stroke-width="2" stroke-dasharray="8 8"/>
+<rect x="150" y="150" width="14" height="40" rx="4" fill="var(--nav)"/><circle id="lNS-r" class="lamp" cx="157" cy="160" r="4"/><circle id="lNS-g" class="lamp" cx="157" cy="178" r="4"/>
+<rect x="76" y="50" width="40" height="14" rx="4" fill="var(--nav)" transform="translate(0,0)"/><circle id="lEW-r" class="lamp" cx="86" cy="57" r="4"/><circle id="lEW-g" class="lamp" cx="104" cy="57" r="4"/>
+<text x="168" y="210" font-size="11" fill="var(--mute)">Main St</text><text x="4" y="90" font-size="11" fill="var(--mute)">Central Ave</text>
+</svg>
+<div>
+<div class="seg" role="group" aria-label="Signal mode"><button id="mFixed" aria-pressed="false">Fixed timing</button><button id="mAdapt" aria-pressed="true">Adaptive</button></div>
+<label for="dem">Main Street demand: <span id="demV">60</span>%</label>
+<input id="dem" type="range" min="10" max="100" value="60">
+<div class="phase" aria-hidden="true"><div id="pNS" style="background:var(--free)"></div><div id="pEW" style="background:var(--accent)"></div></div>
+<p id="sigTxt" style="margin:0"></p>
+</div>
+</div>
+</section>
+
+<section id="monitoring" class="reveal">
+<h2>Monitoring</h2>
+<p class="lede">Sensors and cameras across the network, with automatic incident detection.</p>
+<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+<div><b>1,240</b><span>Road sensors</span></div><div><b>386</b><span>Cameras</span></div><div><b>212</b><span>Smart junctions</span></div><div><b>38 s</b><span>Avg. incident detection</span></div>
+</div>
+<div class="cams">
+<figure class="cam" style="margin:0"><span class="rec">&#9679; REC</span><svg viewBox="0 0 220 120" role="img" aria-label="Camera view of Main Street junction"><rect width="220" height="120" fill="var(--bg)"/><path d="M0,120 L90,40 H130 L220,120Z" fill="var(--road)"/><path d="M110,40 V120" stroke="var(--surface)" stroke-dasharray="6 6"/><rect x="95" y="70" width="14" height="22" rx="3" fill="var(--heavy)"/><rect x="122" y="84" width="16" height="24" rx="3" fill="var(--mod)"/><rect x="100" y="52" width="9" height="13" rx="2" fill="var(--accent)"/></svg><p><b>CAM 14</b> Main St at Central Ave</p><ul class="adjectives" aria-label="Qualities"><li>Busy</li><li>Signal-controlled</li><li>Monitored</li></ul></figure>
+<figure class="cam" style="margin:0"><span class="rec">&#9679; REC</span><svg viewBox="0 0 220 120" role="img" aria-label="Camera view of East Link overpass"><rect width="220" height="120" fill="var(--bg)"/><rect y="62" width="220" height="30" fill="var(--road)"/><rect x="30" y="68" width="20" height="10" rx="3" fill="var(--free)"/><rect x="100" y="76" width="22" height="10" rx="3" fill="var(--accent)"/><rect x="160" y="68" width="20" height="10" rx="3" fill="var(--free)"/><rect x="0" y="40" width="220" height="8" fill="var(--line)"/></svg><p><b>CAM 31</b> East Link overpass</p><ul class="adjectives" aria-label="Qualities"><li>Elevated</li><li>Wide-angle</li><li>Continuous</li></ul></figure>
+<figure class="cam" style="margin:0"><span class="rec">&#9679; REC</span><svg viewBox="0 0 220 120" role="img" aria-label="Camera view of Harbour Road"><rect width="220" height="120" fill="var(--bg)"/><rect y="70" width="220" height="30" fill="var(--road)"/><rect y="100" width="220" height="20" fill="var(--line)"/><rect x="60" y="76" width="24" height="12" rx="3" fill="var(--mod)"/><rect x="140" y="82" width="24" height="12" rx="3" fill="var(--free)"/></svg><p><b>CAM 07</b> Harbour Road, east</p><ul class="adjectives" aria-label="Qualities"><li>Coastal</li><li>Freight-heavy</li><li>Weather-aware</li></ul></figure>
+</div>
+<section class="panel" id="health">
+<button class="panel-head" type="button" aria-expanded="false" aria-controls="healthBody"><span>Network health details</span><span class="chev" aria-hidden="true">&#9662;</span></button>
+<div class="panel-body" id="healthBody"><div class="panel-in"><div class="panel-pad">
+<ul class="meters">
+<li><span class="m-label">Sensors online</span><span class="m-val">98%</span><div class="m-track"><div class="m-fill" style="--w:98%"></div></div></li>
+<li><span class="m-label">Cameras online</span><span class="m-val">96%</span><div class="m-track"><div class="m-fill" style="--w:96%"></div></div></li>
+<li><span class="m-label">Junctions on adaptive timing</span><span class="m-val">91%</span><div class="m-track"><div class="m-fill" style="--w:91%"></div></div></li>
+</ul>
+<ul class="adjectives" aria-label="Qualities"><li>Resilient</li><li>Redundant</li><li>Self-monitoring</li></ul>
+</div></div></div>
+</section>
+</section>
+
+<section id="media" class="reveal">
+<h2>Media centre</h2>
+<p class="lede">An AI-driven, animated gallery of the sensors, signals and cameras that keep traffic moving, followed by video, audio and a live street map. Every scene has a text alternative.</p>
+<div class="gallery" role="list">
+<figure role="listitem"><div class="media"><svg class="art" viewBox="0 0 400 240" role="img" aria-label="Control room wall of screens showing network charts and a camera feed" preserveAspectRatio="xMidYMid slice"><rect width="400" height="240" fill="#14213d"/>
+<rect x="30" y="30" width="160" height="90" rx="6" fill="#0b5fff"/>
+<path d="M30 60H190M30 90H190" stroke="#fff" stroke-opacity=".18"/>
+<polyline class="a-line" pathLength="1" points="45,100 80,70 110,90 150,50 175,75" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="210" y="30" width="160" height="90" rx="6" fill="#1f9d55"/>
+<circle cx="290" cy="75" r="28" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="4"/>
+<circle class="a-spin" cx="290" cy="75" r="28" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="110 66"/>
+<circle class="a-blink" cx="290" cy="75" r="6" fill="#fff"/>
+<rect x="30" y="140" width="340" height="60" rx="6" fill="#2b364b"/>
+<g fill="#6c9cff"><rect class="a-bar" style="--d:0s" x="46" y="160" width="14" height="30" rx="2"/><rect class="a-bar" style="--d:.15s" x="72" y="150" width="14" height="40" rx="2"/><rect class="a-bar" style="--d:.3s" x="98" y="165" width="14" height="25" rx="2"/><rect class="a-bar" style="--d:.45s" x="124" y="152" width="14" height="38" rx="2"/><rect class="a-bar" style="--d:.6s" x="150" y="158" width="14" height="32" rx="2"/><rect class="a-bar" style="--d:.75s" x="176" y="148" width="14" height="42" rx="2"/><rect class="a-bar" style="--d:.9s" x="202" y="162" width="14" height="28" rx="2"/><rect class="a-bar" style="--d:1.05s" x="228" y="154" width="14" height="36" rx="2"/><rect class="a-bar" style="--d:1.2s" x="254" y="146" width="14" height="44" rx="2"/><rect class="a-bar" style="--d:1.35s" x="280" y="160" width="14" height="30" rx="2"/><rect class="a-bar" style="--d:1.5s" x="306" y="152" width="14" height="38" rx="2"/><rect class="a-bar" style="--d:1.65s" x="332" y="164" width="14" height="26" rx="2"/></g>
+<rect class="a-sweep" x="30" y="30" width="340" height="2" fill="#fff"/></svg><span class="ai-chip" aria-hidden="true">AI · Vision</span><button class="info-btn" type="button" aria-expanded="false" aria-label="Show details"><span aria-hidden="true">+</span></button><div class="overlay"><span class="kicker">Quick fact</span><span class="fact">Operators follow 1,240 sensors and 386 cameras from a single wall.</span><ul class="adjectives" aria-label="More qualities"><li>Coordinated</li><li>Always-on</li></ul></div></div><figcaption><ul class="adjectives" aria-label="Qualities"><li>Centralised</li><li>Real-time</li><li>Collaborative</li></ul><span class="cap">Operations centre: operators watch the whole network on one wall.</span></figcaption></figure>
+<figure role="listitem"><div class="media"><svg class="art" viewBox="0 0 400 240" role="img" aria-label="Traffic signal on a pole with the red lamp lit" preserveAspectRatio="xMidYMid slice"><rect width="400" height="240" fill="#dfe6ef"/>
+<rect y="170" width="400" height="70" fill="#4a566b"/>
+<path class="a-lane" d="M0,205H400" stroke="#fff" stroke-width="3" stroke-dasharray="20 16"/>
+<rect x="190" y="130" width="20" height="40" fill="#53607a"/>
+<rect x="160" y="20" width="80" height="110" rx="12" fill="#14213d"/>
+<circle class="a-red" cx="200" cy="48" r="14" fill="#d64545"/>
+<circle class="a-amber" cx="200" cy="76" r="14" fill="#d99a00"/>
+<circle class="a-green" cx="200" cy="104" r="14" fill="#1f9d55"/>
+<circle class="a-ping" cx="200" cy="76" r="14" fill="none" stroke="#6c9cff" stroke-width="2"/>
+<g class="a-queue"><rect x="120" y="180" width="52" height="20" rx="6" fill="#0b5fff"/><rect x="132" y="184" width="14" height="8" rx="2" fill="#fff" opacity=".8"/></g>
+<g class="a-queue" style="animation-delay:.3s"><rect x="50" y="210" width="52" height="20" rx="6" fill="#d99a00"/><rect x="62" y="214" width="14" height="8" rx="2" fill="#fff" opacity=".8"/></g></svg><span class="ai-chip" aria-hidden="true">AI · Timing</span><button class="info-btn" type="button" aria-expanded="false" aria-label="Show details"><span aria-hidden="true">+</span></button><div class="overlay"><span class="kicker">Quick fact</span><span class="fact">When one road backs up, the signal lengthens its green time automatically.</span><ul class="adjectives" aria-label="More qualities"><li>Data-driven</li><li>Smooth</li></ul></div></div><figcaption><ul class="adjectives" aria-label="Qualities"><li>Adaptive</li><li>Responsive</li><li>Efficient</li></ul><span class="cap">Smart signal: timing adjusts to the queue in front of it.</span></figcaption></figure>
+<figure role="listitem"><div class="media"><svg class="art" viewBox="0 0 400 240" role="img" aria-label="Road with a sensor loop under a car and a dotted line to a roadside unit" preserveAspectRatio="xMidYMid slice"><rect width="400" height="240" fill="#aab4c3"/>
+<path class="a-lane" d="M0,120H400" stroke="#fff" stroke-width="4" stroke-dasharray="20 16"/>
+<rect class="a-loop" x="150" y="140" width="100" height="60" rx="6" fill="none" stroke="#0b5fff" stroke-width="4"/>
+<g class="a-sense"><rect x="170" y="155" width="60" height="30" rx="8" fill="#14213d"/><rect x="204" y="160" width="18" height="10" rx="2" fill="#6c9cff"/></g>
+<path class="a-flow" d="M200,50V135" stroke="#0b5fff" stroke-width="2" stroke-dasharray="4 4"/>
+<circle cx="200" cy="40" r="6" fill="#0b5fff"/>
+<circle class="a-ping" cx="200" cy="40" r="6" fill="none" stroke="#0b5fff" stroke-width="2"/></svg><span class="ai-chip" aria-hidden="true">AI · Sensing</span><button class="info-btn" type="button" aria-expanded="false" aria-label="Show details"><span aria-hidden="true">+</span></button><div class="overlay"><span class="kicker">Quick fact</span><span class="fact">Loops under the road surface count vehicles and measure speed.</span><ul class="adjectives" aria-label="More qualities"><li>Precise</li><li>Durable</li></ul></div></div><figcaption><ul class="adjectives" aria-label="Qualities"><li>Accurate</li><li>Embedded</li><li>Reliable</li></ul><span class="cap">In-road sensor: counts vehicles and measures speed.</span></figcaption></figure>
+<figure role="listitem"><div class="media"><svg class="art" viewBox="0 0 400 240" role="img" aria-label="Camera mounted on a gantry above the road with a cone of view pointing down" preserveAspectRatio="xMidYMid slice"><rect width="400" height="240" fill="#dfe6ef"/>
+<rect y="170" width="400" height="70" fill="#aab4c3"/>
+<rect x="20" y="40" width="360" height="14" rx="4" fill="#53607a"/>
+<rect x="40" y="54" width="12" height="186" fill="#53607a"/><rect x="348" y="54" width="12" height="186" fill="#53607a"/>
+<path class="a-cone" d="M200,90 L110,235 H290Z" fill="#0b5fff" opacity=".18"/>
+<rect x="170" y="54" width="60" height="36" rx="8" fill="#14213d"/>
+<circle cx="200" cy="72" r="11" fill="#0b5fff"/><circle class="a-blink" cx="200" cy="72" r="4" fill="#fff"/>
+<g class="a-mover"><rect x="60" y="180" width="44" height="18" rx="5" fill="#14213d"/><rect x="55" y="174" width="54" height="30" rx="3" fill="none" stroke="#1f9d55" stroke-width="2" stroke-dasharray="5 3"/></g>
+<rect x="290" y="208" width="48" height="18" rx="5" fill="#d64545"/>
+<rect class="a-alert" x="284" y="202" width="60" height="30" rx="3" fill="none" stroke="#d64545" stroke-width="2.5"/>
+<text class="a-alert" x="284" y="198" font-size="10" font-weight="700" fill="#d64545">STOPPED</text></svg><span class="ai-chip" aria-hidden="true">AI · Detection</span><button class="info-btn" type="button" aria-expanded="false" aria-label="Show details"><span aria-hidden="true">+</span></button><div class="overlay"><span class="kicker">Quick fact</span><span class="fact">Automatic detection flags a stopped vehicle in about 38 seconds.</span><ul class="adjectives" aria-label="More qualities"><li>Alert</li><li>Fast</li></ul></div></div><figcaption><ul class="adjectives" aria-label="Qualities"><li>Vigilant</li><li>Automated</li><li>High-resolution</li></ul><span class="cap">Gantry camera: detects stopped vehicles and incidents within seconds.</span></figcaption></figure>
+<figure role="listitem"><div class="media"><svg class="art" viewBox="0 0 400 240" role="img" aria-label="Roadside electronic sign showing three lines of text and a warning triangle" preserveAspectRatio="xMidYMid slice"><rect width="400" height="240" fill="#dfe6ef"/>
+<rect x="50" y="40" width="300" height="110" rx="8" fill="#14213d"/>
+<rect class="a-type" style="--d:0s" x="70" y="62" width="120" height="10" rx="3" fill="#d99a00"/>
+<rect class="a-type" style="--d:.5s" x="70" y="86" width="200" height="10" rx="3" fill="#d99a00"/>
+<rect class="a-type" style="--d:1s" x="70" y="110" width="90" height="10" rx="3" fill="#d99a00"/>
+<path class="a-warn" d="M300,70 L320,110 H280Z" fill="#d64545"/>
+<rect x="95" y="150" width="12" height="90" fill="#53607a"/><rect x="293" y="150" width="12" height="90" fill="#53607a"/></svg><span class="ai-chip" aria-hidden="true">AI · Messaging</span><button class="info-btn" type="button" aria-expanded="false" aria-label="Show details"><span aria-hidden="true">+</span></button><div class="overlay"><span class="kicker">Quick fact</span><span class="fact">Signs show hazards and detours the moment an operator publishes them.</span><ul class="adjectives" aria-label="More qualities"><li>Informative</li><li>Instant</li></ul></div></div><figcaption><ul class="adjectives" aria-label="Qualities"><li>Clear</li><li>Timely</li><li>Visible</li></ul><span class="cap">Variable message sign: warns drivers of hazards and recommended detours.</span></figcaption></figure>
+<figure role="listitem"><div class="media"><svg class="art" viewBox="0 0 400 240" role="img" aria-label="Bus in a green priority lane beside a lane of general traffic" preserveAspectRatio="xMidYMid slice"><rect width="400" height="240" fill="#aab4c3"/>
+<rect y="60" width="400" height="50" fill="#1f9d55" opacity=".55"/>
+<rect y="110" width="400" height="90" fill="#4a566b"/>
+<path class="a-lane" d="M0,155H400" stroke="#fff" stroke-width="4" stroke-dasharray="20 16"/>
+<rect x="290" y="22" width="10" height="34" rx="3" fill="#14213d"/>
+<circle class="a-blink" cx="295" cy="39" r="5" fill="#1f9d55"/>
+<circle class="a-ping" cx="295" cy="39" r="5" fill="none" stroke="#1f9d55" stroke-width="2"/>
+<g class="a-bus"><rect x="110" y="68" width="150" height="34" rx="8" fill="#0b5fff"/><rect x="122" y="74" width="24" height="14" rx="2" fill="#fff"/><rect x="154" y="74" width="24" height="14" rx="2" fill="#fff"/><rect x="186" y="74" width="24" height="14" rx="2" fill="#fff"/><circle cx="140" cy="104" r="7" fill="#14213d"/><circle cx="230" cy="104" r="7" fill="#14213d"/></g>
+<g class="a-car"><rect x="290" y="140" width="54" height="24" rx="6" fill="#d64545"/></g></svg><span class="ai-chip" aria-hidden="true">AI · Priority</span><button class="info-btn" type="button" aria-expanded="false" aria-label="Show details"><span aria-hidden="true">+</span></button><div class="overlay"><span class="kicker">Quick fact</span><span class="fact">An early green light keeps buses on schedule in busy corridors.</span><ul class="adjectives" aria-label="More qualities"><li>Punctual</li><li>Greener</li></ul></div></div><figcaption><ul class="adjectives" aria-label="Qualities"><li>Sustainable</li><li>Prioritised</li><li>Dependable</li></ul><span class="cap">Bus priority lane: signals give buses early green to keep schedules reliable.</span></figcaption></figure>
+</div>
+<div class="two">
+<figure>
+<video controls preload="metadata" poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240'%3E%3Crect width='400' height='240' fill='%2314213d'/%3E%3Cpath d='M0,180 L170,90 H230 L400,180Z' fill='%2353607a'/%3E%3Ccircle cx='200' cy='130' r='30' fill='%23fff' opacity='.9'/%3E%3Cpath d='M192,115 L216,130 L192,145Z' fill='%2314213d'/%3E%3C/svg%3E" width="640" height="360">
+<source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+<source src="https://www.w3schools.com/html/mov_bbb.ogg" type="video/ogg">
+<track kind="captions" srclang="en" label="English" src="data:text/vtt;charset=utf-8,WEBVTT%0A%0A00:00:00.000%20--%3E%2000:00:04.000%0ASample footage. Replace with your own camera clip.%0A%0A00:00:04.000%20--%3E%2000:00:10.000%0AIn use, captions would describe incidents the system detects." default>
+<p>Your browser can’t play this video. <a href="https://www.w3schools.com/html/mov_bbb.mp4">Download the clip</a>.</p>
+</video>
+<figcaption>Video: sample camera clip with English captions. Swap in your own footage by changing the source address.<ul class="adjectives" aria-label="Qualities"><li>Captioned</li><li>Accessible</li><li>Illustrative</li></ul></figcaption>
+</figure>
+<figure>
+<audio id="aud" controls preload="none"><p>Your browser can’t play audio.</p></audio>
+<figcaption>Audio: the rising two-tone chime used at accessible pedestrian crossings.<ul class="adjectives" aria-label="Qualities"><li>Audible</li><li>Distinct</li><li>Inclusive</li></ul></figcaption>
+<details><summary>Audio transcript</summary><p>Three repeats of a short low beep followed by a higher beep. No speech.</p></details>
+</figure>
+</div>
+<figure>
+<iframe title="Street map of a city centre from OpenStreetMap" src="https://www.openstreetmap.org/export/embed.html?bbox=-0.16%2C51.49%2C-0.08%2C51.53&amp;layer=mapnik" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+<figcaption>Embedded map: pan and zoom to explore. <a href="https://www.openstreetmap.org/#map=13/51.51/-0.12">View the larger map</a>.<ul class="adjectives" aria-label="Qualities"><li>Interactive</li><li>Zoomable</li><li>Detailed</li></ul></figcaption>
+</figure>
+</section>
+
+<section id="routes" class="reveal">
+<h2>Navigation</h2>
+<p class="lede">Choose a trip and see routes ranked by live travel time. Selecting a route highlights it on the map above.</p>
+<div class="card nav">
+<div>
+<label for="to">From Central Station to</label>
+<select id="to"><option value="air">Airport</option><option value="uni">University</option><option value="har">Harbour</option></select>
+<button class="go" id="go">Find routes</button>
+</div>
+<div id="results" aria-live="polite"></div>
+</div>
+</section>
+<section id="positioning" class="reveal">
+<h2>Positioning in practice</h2>
+<p class="lede">Five CSS positioning techniques, each shown live and used in this dashboard: the map badge, camera tags, sticky header and table heading, back-to-top button and hotline tab.</p>
+<div class="pos-grid">
+
+<article class="card pos-card">
+<h3>Static <span class="tag tag-static">Default &middot; Predictable</span></h3>
+<p>The natural, normal-flow position. Offsets such as <code>top</code> have no effect.</p>
+<div class="demo"><div class="box">Block A</div><div class="box hot pos-static">Static</div><div class="box">Block C</div></div>
+<pre><code>.pos-static { position: static; }</code></pre>
+</article>
+
+<article class="card pos-card">
+<h3>Relative <span class="tag tag-relative">Offset &middot; Anchored</span></h3>
+<p>Shifted from its normal spot, which stays reserved. It also anchors absolute children.</p>
+<div class="demo"><div class="box">Block A</div><div class="box hot pos-relative">Relative</div><div class="box">Block C</div></div>
+<pre><code>.pos-relative { position: relative;
+  top: 8px; left: 28px; }</code></pre>
+</article>
+
+<article class="card pos-card">
+<h3>Absolute <span class="tag tag-absolute">Precise &middot; Detached</span></h3>
+<p>Removed from the flow and placed exactly inside its nearest positioned parent.</p>
+<div class="demo demo-anchor"><div class="box">Block A</div><div class="box">Block C</div><span class="box hot pos-absolute">Absolute</span></div>
+<pre><code>.demo-anchor { position: relative; }
+.pos-absolute { position: absolute;
+  top: 8px; right: 8px; }</code></pre>
+</article>
+
+<article class="card pos-card">
+<h3>Fixed <span class="tag tag-fixed">Persistent &middot; Viewport-locked</span></h3>
+<p>Pinned to the browser window. Scroll the page: the <b>&uarr;</b> button and the <b>Hotline</b> tab never move.</p>
+<div class="demo demo-note"><span class="box hot">Fixed items on this page: <b>Back to top</b> and <b>Hotline</b></span></div>
+<pre><code>.totop, .hotline { position: fixed;
+  bottom: 20px; }</code></pre>
+</article>
+
+<article class="card pos-card pos-wide">
+<h3>Sticky <span class="tag tag-sticky">Hybrid &middot; Scroll-aware</span></h3>
+<p>Scrolls normally until it reaches its threshold, then sticks. Scroll inside the box to see the heading hold.</p>
+<div class="demo demo-scroll" tabindex="0" aria-label="Scrollable sticky demonstration">
+<div class="box hot pos-sticky">Sticky heading</div>
+<p>Incident log: 06:02 Sensor calibration complete.</p><p>06:15 Peak-hour signal plan activated.</p><p>06:41 Congestion detected on Main Street.</p><p>07:03 Patrol dispatched to Central Avenue.</p><p>07:28 Lane reopened; queues clearing.</p><p>07:52 Adaptive timing restored to normal.</p>
+</div>
+<pre><code>.pos-sticky { position: sticky; top: 0; }</code></pre>
+</article>
+
+</div>
+</section>
+<section id="report" class="reveal">
+<h2>Report a road issue</h2>
+<p class="lede">Tell the operations centre about a crash, hazard or faulty signal. Fields marked * are required.</p>
+<div id="done" role="status" aria-live="polite" hidden></div>
+<form class="rep" id="repForm" action="#" method="post" enctype="multipart/form-data" novalidate>
+<fieldset>
+<legend>Your details</legend>
+<div class="row">
+<div class="f"><label class="req" for="name">Full name</label><input type="text" id="name" name="name" required minlength="2" maxlength="60" pattern="[A-Za-z][A-Za-z .'\-]{1,59}" title="Letters, spaces, dots, apostrophes and hyphens only" autocomplete="name" placeholder="Asha Rao" aria-describedby="err-name"><small class="error" id="err-name"></small></div>
+<div class="f"><label class="req" for="email">Email</label><input type="email" id="email" name="email" required maxlength="80" autocomplete="email" placeholder="you@example.com" aria-describedby="err-email"><small>We email you when the issue is resolved.</small><small class="error" id="err-email"></small></div>
+<div class="f"><label class="req" for="phone">Mobile number</label><input type="tel" id="phone" name="phone" required pattern="[6-9][0-9]{9}" minlength="10" maxlength="10" inputmode="numeric" autocomplete="tel-national" title="Enter a 10-digit mobile number starting with 6, 7, 8 or 9" placeholder="9876543210" aria-describedby="err-phone"><small>10 digits, no spaces or country code.</small><small class="error" id="err-phone"></small></div>
+<div class="f"><label class="req" for="pw">Password</label><input type="password" id="pw" name="password" required minlength="8" maxlength="64" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" autocomplete="new-password" title="At least 8 characters with a letter and a number" aria-describedby="err-pw"><small>At least 8 characters, with a letter and a number.</small><small class="error" id="err-pw"></small></div>
+<div class="f"><label class="req" for="pw2">Confirm password</label><input type="password" id="pw2" name="password2" required minlength="8" maxlength="64" autocomplete="new-password" aria-describedby="err-pw2"><small class="error" id="err-pw2"></small></div>
+</div>
+</fieldset>
+<fieldset>
+<legend>What happened</legend>
+<div class="row">
+<div class="f"><label class="req" for="road">Road</label>
+<select id="road" name="road" required aria-describedby="err-road"><option value="">Choose a road</option><option>North Ring</option><option>Central Avenue</option><option>Harbour Road</option><option>West Bridge Road</option><option>Main Street</option><option>East Link</option><option>Other</option></select><small class="error" id="err-road"></small></div>
+<div class="f"><label class="req" for="landmark">Nearest landmark or junction</label><input type="text" id="landmark" name="landmark" required minlength="3" maxlength="80" placeholder="Opposite the Central Station gate" aria-describedby="err-landmark"><small class="error" id="err-landmark"></small></div>
+<div class="f"><label class="req" for="date">Date seen</label><input type="date" id="date" name="date" required aria-describedby="err-date"><small>Within the last 30 days.</small><small class="error" id="err-date"></small></div>
+<div class="f"><label for="veh">Vehicles involved</label><input type="number" id="veh" name="vehicles" min="0" max="50" step="1" value="0" aria-describedby="err-veh"><small>Enter 0 if none (maximum 50).</small><small class="error" id="err-veh"></small></div>
+<div class="f"><label for="delay">Delay caused (minutes)</label><input type="number" id="delay" name="delay" min="0" max="240" step="5" value="0" aria-describedby="err-delay"><small>Estimate in steps of 5, from 0 to 240.</small><small class="error" id="err-delay"></small></div>
+<div class="f"><label for="plate">Vehicle plate (optional)</label><input type="text" id="plate" name="plate" pattern="[A-Za-z0-9 \-]{4,13}" title="4 to 13 letters, numbers, spaces or hyphens (for example TN 38 AB 1234)" placeholder="TN 38 AB 1234" aria-describedby="err-plate"><small class="error" id="err-plate"></small></div>
+</div>
+<p style="margin:14px 0 4px"><b class="req" id="sevL">Severity</b></p>
+<div class="opts" role="radiogroup" aria-labelledby="sevL" aria-describedby="err-severity">
+<label><input type="radio" name="severity" value="Severe" required> Severe (blocking road)</label>
+<label><input type="radio" name="severity" value="Moderate"> Moderate (slowing traffic)</label>
+<label><input type="radio" name="severity" value="Advisory"> Advisory (no delay yet)</label>
+</div>
+<small class="error" id="err-severity"></small>
+<p style="margin:14px 0 4px"><b class="req" id="typeL">Issue type</b></p>
+<div class="opts" role="group" aria-labelledby="typeL" aria-describedby="err-type">
+<label><input type="checkbox" id="type1" name="type" value="Crash"> Crash</label>
+<label><input type="checkbox" name="type" value="Signal fault"> Signal fault</label>
+<label><input type="checkbox" name="type" value="Flooding"> Flooding</label>
+<label><input type="checkbox" name="type" value="Pothole"> Pothole</label>
+<label><input type="checkbox" name="type" value="Broken-down vehicle"> Broken-down vehicle</label>
+</div>
+<small class="error" id="err-type"></small>
+<div class="f" style="margin-top:14px"><label class="req" for="desc">Description</label><textarea id="desc" name="description" required minlength="15" maxlength="500" placeholder="Where exactly is it, and what can you see?" aria-describedby="err-desc"></textarea><small>15 to 500 characters. <span id="descCount">0</span>/500</small><small class="error" id="err-desc"></small></div>
+<div class="f" style="margin-top:14px"><label for="photo">Photo (optional)</label><input type="file" id="photo" name="photo" accept="image/png,image/jpeg" aria-describedby="err-photo"><small>JPG or PNG, up to 5 MB.</small><small class="error" id="err-photo"></small></div>
+</fieldset>
+<label style="font-weight:400;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="ok" name="consent" required style="margin-top:6px" aria-describedby="err-ok"> <span>I agree that Meridian Transit may use this report to manage traffic. *</span></label>
+<small class="error" id="err-ok"></small>
+<div id="formErrors" class="error-summary" role="alert" hidden></div>
+<div class="btns"><button type="submit">Send report</button><button type="reset">Clear form</button></div>
+</form>
+</section>
+</main>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<a class="totop" href="#top" aria-label="Back to top">&#8593;</a>
+<a class="hotline" href="#report">&#9888; Report an incident</a>
+<footer><div><span><b>Meridian Transit</b> – Traffic Operations Centre</span><span>Sample data shown for demonstration. Not for live navigation.</span></div></footer>
+
+<script>
+var ROADS={
+ north:{n:"North Ring",d:"M40,90 H560",s:"free",sp:62,lim:70,surf:"Dry",vis:"Good",t:"Clear in both directions."},
+ central:{n:"Central Avenue",d:"M40,200 H560",s:"heavy",sp:14,lim:50,surf:"Dry",vis:"Good",t:"Queues from East Link back to Main Street."},
+ harbour:{n:"Harbour Road",d:"M40,310 H560",s:"free",sp:48,lim:60,surf:"Damp",vis:"Moderate",t:"Mist near the waterfront; reduced visibility."},
+ west:{n:"West Bridge Road",d:"M150,40 V360",s:"mod",sp:27,lim:50,surf:"Dry",vis:"Good",t:"Slower traffic approaching the bridge."},
+ main:{n:"Main Street",d:"M300,40 V360",s:"heavy",sp:11,lim:40,surf:"Wet",vis:"Good",t:"Collision reported at Central Avenue. One lane closed."},
+ east:{n:"East Link",d:"M450,40 V360",s:"mod",sp:33,lim:60,surf:"Dry",vis:"Good",t:"Busy airport traffic. Expect minor delays."}
+};
+var LABEL={free:"Free flow",mod:"Moderate",heavy:"Heavy"};
+var NS="http://www.w3.org/2000/svg",sel=null,hl=[];
+var g=document.getElementById("roads");
+Object.keys(ROADS).forEach(function(k){
+ var r=ROADS[k],p=document.createElementNS(NS,"path");
+ p.setAttribute("d",r.d);p.setAttribute("class","road "+r.s);p.setAttribute("id","r_"+k);
+ p.setAttribute("tabindex","0");p.setAttribute("role","button");p.setAttribute("aria-label",r.n+", "+LABEL[r.s]);
+ p.addEventListener("click",function(){pick(k)});
+ p.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();pick(k)}});
+ g.appendChild(p);
+});
+var nodes=document.getElementById("nodes");
+[150,300,450].forEach(function(x){[90,200,310].forEach(function(y){
+ var c=document.createElementNS(NS,"circle");c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("r",6);
+ c.setAttribute("fill","var(--surface)");c.setAttribute("stroke","var(--ink)");c.setAttribute("stroke-width",2);nodes.appendChild(c)})});
+var st=document.createElementNS(NS,"rect");st.setAttribute("x",292);st.setAttribute("y",192);st.setAttribute("width",16);st.setAttribute("height",16);st.setAttribute("rx",3);st.setAttribute("fill","var(--ink)");st.setAttribute("pointer-events","none");nodes.appendChild(st);
+
+function pick(k){
+ sel=k;var r=ROADS[k];
+ document.querySelectorAll(".road").forEach(function(e){e.classList.toggle("sel",e.id==="r_"+k)});
+ var mins=Math.round(10/r.sp*60);
+ document.getElementById("detail").innerHTML='<h3>'+r.n+'</h3><span class="pill '+r.s+'">'+LABEL[r.s]+'</span><p>'+r.t+'</p><div class="stats"><div><b>'+r.sp+'</b><span>km/h now</span></div><div><b>'+r.lim+'</b><span>km/h limit</span></div><div><b>'+mins+' min</b><span>per 10 km</span></div></div>';
+ var dt=document.getElementById("detail");dt.classList.remove("swap");void dt.offsetWidth;dt.classList.add("swap");
+}
+pick("main");
+
+var ALERTS=[
+ {s:"high",t:"Collision on Main Street",d:"Central Avenue junction. Left lane closed; use West Bridge Road.",m:"4 min ago",tip:"Avoid Main Street near Central Avenue and use West Bridge Road.",adj:["Urgent","Blocking","Active"]},
+ {s:"high",t:"Signal fault on East Link",d:"Crews on site. Junction running on backup timing.",m:"12 min ago",tip:"Expect slow, cautious progress through the junction until crews finish.",adj:["Urgent","Temporary","Supervised"]},
+ {s:"med",t:"Heavy queues on Central Avenue",d:"Eastbound delays of about 18 minutes toward East Link.",m:"20 min ago",tip:"North Ring is flowing freely and is the better eastbound choice.",adj:["Congested","Persistent","Avoidable"]},
+ {s:"med",t:"Fog near Harbour Road",d:"Visibility reduced. Lower speed limit in force.",m:"35 min ago",tip:"Use dipped headlights and keep a larger gap from the vehicle ahead.",adj:["Misty","Low-visibility","Changing"]},
+ {s:"low",t:"Roadworks on North Ring",d:"Night works 22:00–05:00 this week. One lane open.",m:"Today",tip:"Daytime traffic runs normally; allow extra time at night.",adj:["Scheduled","Overnight","Temporary"]},
+ {s:"low",t:"Bridge inspection on West Bridge Road",d:"Weekend lane narrowing. Allow extra time.",m:"Today",tip:"Allow a few extra minutes if you travel at the weekend.",adj:["Planned","Routine","Minor"]}
+];
+var NAMES={high:"Severe",med:"Moderate",low:"Advisory"};
+function drawAlerts(f){
+ document.getElementById("alertList").innerHTML=ALERTS.filter(function(a){return f==="all"||a.s===f}).map(function(a){
+  return '<li><div class="sev '+a.s+'"></div><div class="body"><b>'+a.t+'</b><br><small>'+NAMES[a.s]+' – '+a.d+'</small><div class="more"><div class="more-in"><p><b>What to do:</b> '+a.tip+'</p><ul class="adjectives" aria-label="Qualities">'+a.adj.map(function(w){return '<li>'+w+'</li>'}).join("")+'</ul></div></div></div><div class="side"><time>'+a.m+'</time><button class="more-btn" type="button" aria-expanded="false"><span>Details</span></button></div></li>'}).join("")||"<li><div></div><div class='body'>No alerts in this category.</div></li>";
+}
+drawAlerts("all");
+document.querySelectorAll(".chip").forEach(function(b){b.addEventListener("click",function(){
+ document.querySelectorAll(".chip").forEach(function(x){x.setAttribute("aria-pressed",x===b)});drawAlerts(b.dataset.f);
+ var n=document.querySelectorAll("#alertList .more-btn").length;
+ if(window.notify)notify("info",b.textContent+" alerts",n+(n===1?" alert":" alerts")+" shown.")})});
+
+document.getElementById("cond").innerHTML=Object.keys(ROADS).map(function(k){var r=ROADS[k];
+ return '<tr><td><b>'+r.n+'</b></td><td>'+r.sp+' km/h</td><td><span class="pill '+r.s+'">'+LABEL[r.s]+'</span></td><td>'+r.surf+'</td><td>'+r.vis+'</td></tr>'}).join("");
+
+/* Smart signals */
+var adaptive=true,dem=60,step=0,cur="NS";
+function greens(){
+ if(!adaptive)return{ns:30,ew:30};
+ var ns=Math.round(15+dem*0.45);return{ns:ns,ew:Math.max(15,75-ns)};
+}
+function lamps(){
+ var on=cur==="NS";
+ document.getElementById("lNS-g").style.fill=on?"var(--free)":"";document.getElementById("lNS-r").style.fill=on?"":"var(--heavy)";
+ document.getElementById("lEW-g").style.fill=on?"":"var(--free)";document.getElementById("lEW-r").style.fill=on?"var(--heavy)":"";
+}
+function sig(){
+ var q=greens();
+ document.getElementById("pNS").style.flexGrow=q.ns;document.getElementById("pNS").textContent="Main St "+q.ns+" s";
+ document.getElementById("pEW").style.flexGrow=q.ew;document.getElementById("pEW").textContent="Central Ave "+q.ew+" s";
+ var wait=adaptive?Math.round(q.ew/2+(100-dem)/10):Math.round(30/2+dem/3);
+ document.getElementById("sigTxt").textContent=adaptive?"Green time shifts to Main Street as demand rises, cutting the average wait to about "+wait+" seconds.":"Both roads get the same green time, so the average wait on Main Street climbs to about "+wait+" seconds.";
+ document.getElementById("demV").textContent=dem;
+}
+function tick(){
+ var q=greens(),len=cur==="NS"?q.ns:q.ew;
+ step++;if(step>=Math.max(4,Math.round(len/6))){step=0;cur=cur==="NS"?"EW":"NS"}lamps();
+}
+document.getElementById("dem").addEventListener("input",function(e){dem=+e.target.value;sig()});
+function mode(a){adaptive=a;document.getElementById("mAdapt").setAttribute("aria-pressed",a);document.getElementById("mFixed").setAttribute("aria-pressed",!a);sig()}
+document.getElementById("mAdapt").onclick=function(){mode(true)};document.getElementById("mFixed").onclick=function(){mode(false)};
+sig();lamps();setInterval(tick,1000);
+
+/* Navigation */
+var TIME={free:1,mod:1.5,heavy:2.6};
+var TRIPS={
+ air:[{n:"Central Avenue, then East Link",r:["central","east"],km:7.5},{n:"Main Street, then North Ring",r:["main","north"],km:7.8},{n:"Harbour Road, then East Link",r:["main","harbour","east"],km:11.5}],
+ uni:[{n:"Main Street, then North Ring",r:["main","north"],km:7},{n:"Central Avenue, then West Bridge Road",r:["central","west"],km:7},{n:"Main Street, Harbour Road, West Bridge Road",r:["main","harbour","west"],km:12}],
+ har:[{n:"Main Street",r:["main"],km:5.5},{n:"Central Avenue, then West Bridge Road",r:["central","west"],km:10},{n:"Central Avenue, then East Link",r:["central","east"],km:10}]
+};
+function route(){
+ var list=TRIPS[document.getElementById("to").value].map(function(t){
+  var m=0;t.r.forEach(function(k){var r=ROADS[k];m+=(t.km/t.r.length)/ (r.sp)*60});
+  t.min=Math.max(4,Math.round(m));return t}).sort(function(a,b){return a.min-b.min});
+ var html=list.map(function(t,i){return '<button class="route" data-i="'+i+'" aria-pressed="'+(i===0)+'"><b>'+t.min+' min</b><span>'+t.km+' km'+(i===0?" – fastest":"")+'</span><span style="grid-column:1/-1">Via '+t.n+'</span></button>'}).join("");
+ var box=document.getElementById("results");box.innerHTML=html;
+ function show(i){list[i].r.forEach(function(){});
+  document.getElementById("hl").innerHTML=list[i].r.map(function(k){return '<path class="hl" pathLength="1" d="'+ROADS[k].d+'"/>'}).join("");
+  box.querySelectorAll(".route").forEach(function(b){b.setAttribute("aria-pressed",+b.dataset.i===i)})}
+ box.querySelectorAll(".route").forEach(function(b){b.onclick=function(){show(+b.dataset.i);document.getElementById("map").scrollIntoView()}});
+ show(0);
+}
+document.getElementById("go").onclick=route;
+route();document.getElementById("hl").innerHTML="";
+
+var mins=0;setInterval(function(){mins++;document.getElementById("clock").textContent=mins+" min ago"},60000);
+
+/* Generate the chime as a WAV file so no audio download is needed */
+(function(){try{
+ var sr=22050,notes=[[660,.25],[0,.1],[990,.25],[0,.4],[660,.25],[0,.1],[990,.25],[0,.4],[660,.25],[0,.1],[990,.25]];
+ var n=0;notes.forEach(function(x){n+=Math.floor(sr*x[1])});
+ var b=new ArrayBuffer(44+n*2),v=new DataView(b);
+ function w(o,t){for(var i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))}
+ w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+ v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+ var p=44;notes.forEach(function(x){var c=Math.floor(sr*x[1]);for(var i=0;i<c;i++){var e=Math.min(1,i/400,(c-i)/400);v.setInt16(p,x[0]?Math.sin(2*Math.PI*x[0]*i/sr)*9000*e:0,true);p+=2}});
+ document.getElementById("aud").src=URL.createObjectURL(new Blob([b],{type:"audio/wav"}));
+}catch(e){}})();
+
+/* Responsive menu: toggle button and active-link highlight */
+(function(){
+ var hd=document.querySelector(".site-header"),btn=hd.querySelector(".menu-toggle"),links=hd.querySelectorAll(".menu a");
+ function setOpen(o){hd.classList.toggle("open",o);btn.setAttribute("aria-expanded",o)}
+ btn.addEventListener("click",function(){setOpen(!hd.classList.contains("open"))});
+ links.forEach(function(a){a.addEventListener("click",function(){setOpen(false)})});
+ document.addEventListener("keydown",function(e){if(e.key==="Escape")setOpen(false)});
+ window.addEventListener("resize",function(){if(window.innerWidth>980)setOpen(false)});
+ if("IntersectionObserver" in window){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){
+   links.forEach(function(a){if(a.getAttribute("href")==="#"+e.target.id)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")})}})},{rootMargin:"-30% 0px -60% 0px"});
+  links.forEach(function(a){var s=document.querySelector(a.getAttribute("href"));if(s)io.observe(s)});
+ }
+})();
+</script>
+</body>
+</html>
